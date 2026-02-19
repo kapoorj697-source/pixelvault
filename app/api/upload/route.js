@@ -7,43 +7,42 @@ import { r2 } from "@/lib/r2";
 export async function POST(req) {
   try {
     const formData = await req.formData();
-    const file = formData.get("file");
 
-    const slug = (formData.get("slug") || "").toString().trim();
+    const files = formData.getAll("file"); // multi upload
+    const rawSlug = formData.get("slug") || "default";
 
-    if (!slug) {
-      return NextResponse.json(
-        { ok: false, message: "Slug required (example: jai-vinisha)" },
-        { status: 400 }
-      );
+    if (!files || files.length === 0) {
+      return NextResponse.json({ ok: false, message: "No file" });
     }
 
-    if (!file) {
-      return NextResponse.json({ ok: false, message: "No file" }, { status: 400 });
-    }
+    // slug sanitize
+    const slug = rawSlug
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9\-\/]/g, "");
 
     const Bucket = process.env.R2_BUCKET;
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    for (const file of files) {
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
 
-    const safeName = file.name.replace(/\s+/g, "-");
-    const key = `${slug}/${Date.now()}-${safeName}`;
+      const safeName = file.name.replace(/[^a-z0-9.\-]/gi, "_");
 
-    await r2.send(
-      new PutObjectCommand({
-        Bucket,
-        Key: key,
-        Body: buffer,
-        ContentType: file.type || "application/octet-stream",
-      })
-    );
+      const key = `${slug}/${Date.now()}-${safeName}`;
 
-    return NextResponse.json({ ok: true, key });
+      await r2.send(
+        new PutObjectCommand({
+          Bucket,
+          Key: key,
+          Body: buffer,
+          ContentType: file.type || "application/octet-stream",
+        })
+      );
+    }
+
+    return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json(
-      { ok: false, error: e?.message || String(e) },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, message: String(e) });
   }
 }
