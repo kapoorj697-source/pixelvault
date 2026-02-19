@@ -16,8 +16,7 @@ export default function GalleryPage() {
   const [keys, setKeys] = useState([]);
   const [status, setStatus] = useState("Checking...");
   const [msg, setMsg] = useState("");
-  const [file, setFile] = useState(null);
-
+  const [files, setFiles] = useState([]);
   // NEW: client + album
   const [clientName, setClientName] = useState("jai-vinisha");
   const [albumName, setAlbumName] = useState("wedding");
@@ -135,9 +134,11 @@ fd.append("slug", slug);
 
       {/* Upload */}
       <div style={{ marginTop: 10, marginBottom: 16 }}>
-        <input type="file"
-         multiple
-           onChange={(e) => setFile(e.target.files?.[0] || null)} />
+        <input
+  type="file"
+  multiple
+  onChange={(e) => setFiles(Array.from(e.target.files || []))}
+/>
         <button onClick={uploadNow} style={{ marginLeft: 10 }}>
           Upload
         </button>
