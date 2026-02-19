@@ -79,7 +79,10 @@ export default function GalleryPage() {
     try {
       setMsg("Uploading...");
       const fd = new FormData();
-      fd.append("file", file);
+      for (const f of files) {
+  fd.append("file", f);
+}
+fd.append("slug", slug);
       fd.append("slug", fullSlug); // ✅ IMPORTANT
 
       const res = await fetch("/api/upload", {
