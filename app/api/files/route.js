@@ -1,27 +1,24 @@
 import { NextResponse } from "next/server";
 import { ListObjectsV2Command } from "@aws-sdk/client-s3";
-import { getR2Client } from "@/lib/r2";
+import { r2 } from "@/lib/r2";
 
 export async function GET() {
   try {
     const Bucket = process.env.R2_BUCKET;
-    if (!Bucket) throw new Error("Missing R2_BUCKET");
 
-    const client = getR2Client();
-
-    const data = await client.send(
+    const out = await r2.send(
       new ListObjectsV2Command({
         Bucket,
-        Prefix: "uploads/",
+        MaxKeys: 50,
       })
     );
 
-    const keys = (data.Contents || []).map((x) => x.Key);
+    const keys = (out.Contents || []).map((x) => x.Key);
 
     return NextResponse.json({ ok: true, bucket: Bucket, count: keys.length, keys });
   } catch (e) {
     return NextResponse.json(
-      { ok: false, error: e?.name || "Error", message: e?.message || String(e) },
+      { ok: false, error: String(e), message: e?.message || "List failed" },
       { status: 500 }
     );
   }
