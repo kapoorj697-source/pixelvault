@@ -9,6 +9,15 @@ export async function POST(req) {
     const formData = await req.formData();
     const file = formData.get("file");
 
+    const slug = (formData.get("slug") || "").toString().trim();
+
+    if (!slug) {
+      return NextResponse.json(
+        { ok: false, message: "Slug required (example: jai-vinisha)" },
+        { status: 400 }
+      );
+    }
+
     if (!file) {
       return NextResponse.json({ ok: false, message: "No file" }, { status: 400 });
     }
@@ -18,17 +27,8 @@ export async function POST(req) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const slug = (formData.get("slug") || "").toString().trim();
-
-if (!slug) {
-  return NextResponse.json(
-    { ok: false, message: "Slug required (example: jai-vinisha)" },
-    { status: 400 }
-  );
-}
-
-const safeName = file.name.replace(/\s+/g, "-");
-const key = `${slug}/${Date.now()}-${safeName}`;
+    const safeName = file.name.replace(/\s+/g, "-");
+    const key = `${slug}/${Date.now()}-${safeName}`;
 
     await r2.send(
       new PutObjectCommand({
@@ -42,7 +42,7 @@ const key = `${slug}/${Date.now()}-${safeName}`;
     return NextResponse.json({ ok: true, key });
   } catch (e) {
     return NextResponse.json(
-      { ok: false, error: String(e), message: e?.message || "Upload failed" },
+      { ok: false, error: e?.message || String(e) },
       { status: 500 }
     );
   }
