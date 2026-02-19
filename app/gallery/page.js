@@ -3,101 +3,82 @@
 import { useEffect, useState } from "react";
 
 export default function GalleryPage() {
+  const [files, setFiles] = useState([]);
+  const [file, setFile] = useState(null);
   const [status, setStatus] = useState("Checking...");
-  const [error, setError] = useState("");
-  const [keys, setKeys] = useState([]);
-  const [uploading, setUploading] = useState(false);
 
-  async function loadFiles() {
-    setError("");
+  const loadFiles = async () => {
     try {
-      const res = await fetch("/api/files", { cache: "no-store" });
+      const res = await fetch("/api/r2/list");
       const data = await res.json();
 
-      if (!data.ok) {
+      if (data.ok) {
+        setFiles(data.files);
+        setStatus("Connected ✅");
+      } else {
         setStatus("Not connected ❌");
-        setError(data.message || data.error || "Files API failed");
-        setKeys([]);
-        return;
       }
-
-      setStatus("Connected ✅");
-      setKeys(data.keys || []);
     } catch (e) {
       setStatus("Not connected ❌");
-      setError(String(e));
-      setKeys([]);
     }
-  }
+  };
 
   useEffect(() => {
     loadFiles();
   }, []);
 
-  async function onUpload(e) {
-    e.preventDefault();
-    setError("");
-
-    const file = e.target.file.files?.[0];
+  const upload = async () => {
     if (!file) return;
 
-    try {
-      setUploading(true);
-      const fd = new FormData();
-      fd.append("file", file);
+    const fd = new FormData();
+    fd.append("file", file);
 
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: fd,
-      });
-      const data = await res.json();
+    const res = await fetch("/api/r2/upload", {
+      method: "POST",
+      body: fd,
+    });
 
-      if (!data.ok) {
-        setError(data.message || data.error || "Upload failed");
-        return;
-      }
+    const data = await res.json();
 
-      // refresh list
-      await loadFiles();
-      e.target.reset();
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setUploading(false);
+    if (data.ok) {
+      loadFiles();
+      setFile(null);
+    } else {
+      alert("Upload failed");
     }
-  }
+  };
 
   return (
-    <div style={{ padding: 24, fontFamily: "system-ui" }}>
+    <div style={{ padding: 30 }}>
       <h1>Gallery (R2)</h1>
 
-      <p>
-        R2 Status: <b>{status}</b>
-      </p>
+      <p>R2 Status: {status}</p>
 
-      {error ? (
-        <pre style={{ background: "#111", color: "#0f0", padding: 12 }}>
-          {error}
-        </pre>
-      ) : null}
+      <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+      <button onClick={upload}>Upload</button>
 
-      <form onSubmit={onUpload} style={{ marginTop: 12, marginBottom: 20 }}>
-        <input name="file" type="file" />
-        <button type="submit" disabled={uploading} style={{ marginLeft: 10 }}>
-          {uploading ? "Uploading..." : "Upload"}
-        </button>
-      </form>
+      <h3 style={{ marginTop: 30 }}>Files in R2</h3>
 
-      <h3>Files in R2</h3>
-      {keys.length === 0 ? (
-        <p>No files yet</p>
-      ) : (
-        <ul>
-          {keys.map((k) => (
-            <li key={k}>{k}</li>
-          ))}
-        </ul>
-      )}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 15,
+        }}
+      >
+        {files.map((k) => (
+          <img
+            key={k}
+            src={`/api/r2/${k}`}
+            alt={k}
+            style={{
+              width: "100%",
+              borderRadius: 12,
+              objectFit: "cover",
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
