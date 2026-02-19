@@ -132,7 +132,9 @@ export default function GalleryPage() {
 
       {/* Upload */}
       <div style={{ marginTop: 10, marginBottom: 16 }}>
-        <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+        <input type="file"
+         multiple
+           onChange={(e) => setFile(e.target.files?.[0] || null)} />
         <button onClick={uploadNow} style={{ marginLeft: 10 }}>
           Upload
         </button>
