@@ -155,7 +155,7 @@ export default function GalleryPage() {
           {keys.map((k) => (
             <img
               key={k}
-              src={`/api/r2/${k}`}
+             src={`/api/r2/${encodeURIComponent(k)}`}
               alt={k}
               style={{ width: "100%", borderRadius: 10, objectFit: "cover" }}
             />
