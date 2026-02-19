@@ -8,18 +8,16 @@ export async function POST(req) {
   try {
     const formData = await req.formData();
 
-    const files = formData.getAll("file"); // multi upload
-    const rawSlug = formData.get("slug") || "default";
+    const files = formData.getAll("file");
+    const slug = formData.get("slug");
 
     if (!files || files.length === 0) {
-      return NextResponse.json({ ok: false, message: "No file" });
+      return NextResponse.json({ ok: false, message: "No files" });
     }
 
-    // slug sanitize
-    const slug = rawSlug
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9\-\/]/g, "");
+    if (!slug) {
+      return NextResponse.json({ ok: false, message: "Slug missing" });
+    }
 
     const Bucket = process.env.R2_BUCKET;
 
@@ -27,9 +25,9 @@ export async function POST(req) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      const safeName = file.name.replace(/[^a-z0-9.\-]/gi, "_");
+      const cleanName = file.name.replace(/[^\w.\-]/g, "_");
 
-      const key = `${slug}/${Date.now()}-${safeName}`;
+      const key = `${slug}/${Date.now()}-${cleanName}`;
 
       await r2.send(
         new PutObjectCommand({
@@ -43,6 +41,6 @@ export async function POST(req) {
 
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ ok: false, message: String(e) });
+    return NextResponse.json({ ok: false, error: String(e) });
   }
 }
