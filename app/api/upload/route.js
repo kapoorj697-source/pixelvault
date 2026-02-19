@@ -18,7 +18,17 @@ export async function POST(req) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const key = `uploads/${Date.now()}-${file.name}`;
+    const slug = (formData.get("slug") || "").toString().trim();
+
+if (!slug) {
+  return NextResponse.json(
+    { ok: false, message: "Slug required (example: jai-vinisha)" },
+    { status: 400 }
+  );
+}
+
+const safeName = file.name.replace(/\s+/g, "-");
+const key = `${slug}/${Date.now()}-${safeName}`;
 
     await r2.send(
       new PutObjectCommand({
